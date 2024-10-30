@@ -9,6 +9,34 @@ def cost(x):
 def obj(x1, x0, w):
     return x1 @ w + cost(x1 - x0).sum() + (cost(x1.sum()) + cost(x1 @ np.sign(x0))) / 2
 
+def solve(x0, w):
+    n = len(x0)
+    x = cp.Variable(n)
+    constraints = []
+    objective = cp.Minimize(x @ w + cp.square(x - x0).sum() + (cp.square(cp.sum(x)) + cp.square(x @ np.sign(x0))) / 2)
+    problem = cp.Problem(objective, constraints)
+    problem.solve()
+    res = x.value
+    idx0 = np.where(res - x0 <= 0)[0]
+    idx1 = np.where(res - x0 > 0)[0]
+    y1 = 1 if np.sum(res) >= 0 else -1 
+    y2 = 1 if res @ np.sign(x0) >= 0 else -1 
+
+    la = 10
+    x = cp.Variable(n)
+    constraints = []
+    objective_terms = [x @ w + cp.square(x - x0).sum() + 0.5 * (cp.square(cp.sum(x)) + cp.square(x @ np.sign(x0)))]
+    # Add terms based on idx0 and idx1 if they are not empty
+    if idx0.size > 0:
+        objective_terms.append(la * cp.norm1(x[idx0] - x0[idx0] + 1)) 
+    if idx1.size > 0:
+        objective_terms.append(la * cp.norm1(x[idx1] - x0[idx1] - 1)) 
+    objective_terms.append(la * (cp.abs(cp.sum(x) - y1) + cp.abs(x @ np.sign(x0) - y2))) 
+    
+    objective = cp.Minimize(cp.sum(objective_terms))
+    problem = cp.Problem(objective, constraints)
+    problem.solve()
+    return x.value
 
 
 # def solve(x0, w):
@@ -25,32 +53,6 @@ def obj(x1, x0, w):
 def grad_cost(x):
     return np.where(np.abs(x) <= 1, 0.01, 2*np.abs(x)) * np.sign(x)
 
-def solve(x0, w):
-    max_iter, lr, tol = 1000, 0.1, 1e-6
-    n = len(x0)
-    x = cp.Variable(n)
-    constraints = []
-    objective = cp.Minimize(x @ w + cp.square(x - x0).sum() + (cp.square(cp.sum(x)) + cp.square(x @ np.sign(x0))) / 2)
-    problem = cp.Problem(objective, constraints)
-    problem.solve(solver="SCS")
-    res = x.value
-    resmax, objmax = res.copy(), obj(res, x0, w)
-    for _ in range(max_iter):
-        # print(f"begin the {_}th iteration")
-        grad = w + grad_cost(res-x0) + grad_cost(res.sum())/2 + grad_cost(res @ np.sign(x0)) * np.sign(x0)/2
-        res = res - lr * grad
-        objnew = obj(res, x0, w)
-        # print(grad)
-        # print(res - x0)
-        # print(np.sum(res))
-        # print(res @ np.sign(x0))
-        if objnew < objmax:
-            resmax, objmax = res.copy(), objnew
-        if np.linalg.norm(grad) < tol:
-            break
-        # input()
-    return resmax
-
 # def solve(x0, w):
 #     max_iter, lr, tol = 1000, 0.1, 1e-6
 #     n = len(x0)
@@ -62,14 +64,44 @@ def solve(x0, w):
 #     res = x.value
 #     resmax, objmax = res.copy(), obj(res, x0, w)
 #     for _ in range(max_iter):
-#         grad = w + np.where(np.abs(res - x0) <= 1, 0.01, 2*np.abs(res - x0)) + np.where(np.sum(res) <= 1, 0.01, 2*np.sum(res)) + np.where(res @ np.sign(x0) <= 1, 0.01, 2*res @ np.sign(x0)) * np.sign(x0)
+#         print(f"begin the {_}th iteration")
+#         grad = w + grad_cost(res-x0) + grad_cost(res.sum())/2 + grad_cost(res @ np.sign(x0)) * np.sign(x0)/2
 #         res = res - lr * grad
 #         objnew = obj(res, x0, w)
+#         print(grad)
+#         print(res - x0)
+#         print(np.sum(res))
+#         print(res @ np.sign(x0))
 #         if objnew < objmax:
-#             resmax, objmax = res.copy()
+#             resmax, objmax = res.copy(), objnew
 #         if np.linalg.norm(grad) < tol:
 #             break
-#     return res
+#         input()
+#     return resmax
+
+# def solve(x0, w):
+#     max_iter, lr, tol = 1000, 0.1, 1e-6
+#     n = len(x0)
+#     x = cp.Variable(n)
+#     constraints = []
+#     objective = cp.Minimize(x @ w + cp.square(x - x0).sum() + (cp.square(cp.sum(x)) + cp.square(x @ np.sign(x0))) / 2)
+#     problem = cp.Problem(objective, constraints)
+#     problem.solve(solver="SCS")
+#     res = x.value
+#     resmax, objmax = res.copy(), obj(res, x0, w)
+#     gamma, momentum, sigma = 0.9, 0, 0.1
+#     for _ in range(max_iter):
+#         grad = w + grad_cost(res-x0) + grad_cost(res.sum())/2 + grad_cost(res @ np.sign(x0)) * np.sign(x0)/2
+#         momentum = gamma * momentum + lr * grad
+#         noise = np.random.normal(0,sigma)
+#         res = res - momentum + noise
+#         objnew = obj(res, x0, w)
+#         if objnew < objmax:
+#             resmax, objmax = res.copy(), objnew
+#         sigma *= 0.99
+#         if np.linalg.norm(grad) < tol:
+#             break
+#     return resmax
 
 
 # def solve(x0, w):
