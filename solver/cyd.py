@@ -1,13 +1,7 @@
 import cvxpy as cp
 import numpy as np
 
-def cost(x):
-    x = np.abs(x)
-    return np.where(x <= 1, 0.01, x) * x
 
-
-def obj(x1, x0, w):
-    return x1 @ w + cost(x1 - x0).sum() + (cost(x1.sum()) + cost(x1 @ np.sign(x0))) / 2
 
 def solve(x0, w):
     n = len(x0)
@@ -22,7 +16,7 @@ def solve(x0, w):
     y1 = 1 if np.sum(res) >= 0 else -1 
     y2 = 1 if res @ np.sign(x0) >= 0 else -1 
 
-    la = 10
+    la = 500
     x = cp.Variable(n)
     constraints = []
     objective_terms = [x @ w + cp.square(x - x0).sum() + 0.5 * (cp.square(cp.sum(x)) + cp.square(x @ np.sign(x0)))]
