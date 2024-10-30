@@ -29,6 +29,8 @@ solver = importlib.import_module("solver." + sys.argv[1])
 R.seed(0)  # will be changed in official test
 cases = [gen(max(round(1.01 ** i), i)) for i in range(1000)]
 for i, (x0, w) in enumerate(cases):
+    # print(x0)
+    # print(w)
     t0 = time.time()
     x1 = solver.solve(x0, w)
     t1 = time.time()
