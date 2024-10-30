@@ -16,7 +16,7 @@ def solve(x0, w):
     y1 = 1 if np.sum(res) >= 0 else -1 
     y2 = 1 if res @ np.sign(x0) >= 0 else -1 
 
-    la = 500
+    la = 100
     x = cp.Variable(n)
     constraints = []
     objective_terms = [x @ w + cp.square(x - x0).sum() + 0.5 * (cp.square(cp.sum(x)) + cp.square(x @ np.sign(x0)))]
